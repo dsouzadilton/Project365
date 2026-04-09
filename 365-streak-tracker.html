@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>365 days of code</title>
+<link href="https://fonts.googleapis.com/css2?family=Berkeley+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --surface: #161618;
+    --surface2: #1e1e21;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0ede8;
+    --muted: #7a7875;
+    --hint: #3d3d40;
+    --green: #3ddc84;
+    --green-dim: #1a4a32;
+    --green-mid: #2a8a58;
+    --amber: #f5a623;
+    --amber-dim: #3a2a0a;
+    --red: #ff5f57;
+    --blue: #5ba4f5;
+    --mono: 'Berkeley Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .topbar-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+  .topbar-title span { color: var(--green); }
+  .streak-badge {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid var(--green-mid);
+    border-radius: 20px;
+    padding: 4px 14px;
+    letter-spacing: 0.05em;
+  }
+
+  /* layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    min-height: calc(100vh - 57px);
+  }
+
+  /* main */
+  .main { padding: 32px; border-right: 1px solid var(--border); }
+
+  /* stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .stat-val.green { color: var(--green); }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* heatmap */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .heatmap-outer { overflow-x: auto; margin-bottom: 32px; }
+  .month-row {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 4px;
+    min-width: 728px;
+  }
+  .month-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--hint);
+    width: 14px;
+    text-align: center;
+    letter-spacing: 0;
+  }
+  .heatmap {
+    display: grid;
+    grid-template-columns: repeat(52, 14px);
+    grid-template-rows: repeat(7, 14px);
+    gap: 3px;
+    min-width: 728px;
+  }
+  .cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+    position: relative;
+  }
+  .cell:hover { transform: scale(1.5); z-index: 5; }
+  .cell.empty { background: var(--surface2); }
+  .cell.done { background: var(--green); }
+  .cell.done-mid { background: var(--green-mid); }
+  .cell.future { background: var(--hint); opacity: 0.3; cursor: default; }
+  .cell.future:hover { transform: none; }
+  .cell.is-today { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .cell.selected { outline: 2px solid var(--amber); outline-offset: 1px; }
+
+  /* log table */
+  .log-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .log-head {
+    display: grid;
+    grid-template-columns: 52px 1fr 110px 90px 32px;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .log-row {
+    display: grid;
+    grid-template-columns: 52px 1fr 110px 90px 32px;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-row:hover { background: var(--surface2); }
+  .log-row.active { background: var(--green-dim); }
+  .day-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .proj-name { font-weight: 500; font-size: 13px; color: var(--text); }
+  .proj-desc-short { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lang-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 2px 8px;
+    color: var(--muted);
+    display: inline-block;
+  }
+  .date-cell { font-family: var(--mono); font-size: 10px; color: var(--hint); }
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--hint);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px;
+    border-radius: 4px;
+    transition: color 0.1s, background 0.1s;
+  }
+  .del-btn:hover { color: var(--red); background: rgba(255,95,87,0.1); }
+  .empty-state {
+    padding: 48px 16px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--hint);
+    letter-spacing: 0.05em;
+  }
+
+  /* sidebar */
+  .sidebar { background: var(--surface); padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+
+  .form-section { display: flex; flex-direction: column; gap: 12px; }
+  .form-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-title span { color: var(--amber); }
+
+  label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  input[type=text], textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--green-mid); }
+  textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+  .lang-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .lang-chip {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    background: transparent;
+    letter-spacing: 0.05em;
+    transition: all 0.12s;
+  }
+  .lang-chip:hover { border-color: var(--green-mid); color: var(--green); }
+  .lang-chip.on { background: var(--green-dim); border-color: var(--green-mid); color: var(--green); }
+
+  .save-btn {
+    width: 100%;
+    background: var(--green);
+    color: #0e0e0f;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 12px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    text-transform: uppercase;
+  }
+  .save-btn:hover { opacity: 0.85; }
+  .save-btn:active { transform: scale(0.98); }
+  .save-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .msg { font-family: var(--mono); font-size: 11px; color: var(--green); text-align: center; min-height: 18px; }
+
+  /* detail panel */
+  .detail-panel {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: none;
+  }
+  .detail-day { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.08em; }
+  .detail-name { font-size: 16px; font-weight: 500; margin-bottom: 8px; }
+  .detail-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+  .detail-link { font-family: var(--mono); font-size: 11px; color: var(--blue); word-break: break-all; }
+
+  /* export */
+  .export-btn {
+    width: 100%;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .export-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
+
+  /* progress bar */
+  .progress-wrap { margin-bottom: 4px; }
+  .progress-track {
+    height: 3px;
+    background: var(--hint);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.4s;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--hint);
+    margin-top: 5px;
+  }
+
+  /* tooltip */
+  .tooltip {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .cell:hover .tooltip { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">365 days of code <span>// streak tracker</span></div>
+  <div class="streak-badge" id="topbar-streak">— day streak</div>
+</div>
+
+<div class="layout">
+  <div class="main">
+
+    <div class="stats" id="stats"></div>
+
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-label"><span id="prog-left">0 / 365 projects</span><span id="prog-right">0%</span></div>
+    </div>
+
+    <div style="height:24px"></div>
+
+    <div class="section-label">activity heatmap — click any day to log or view</div>
+    <div class="heatmap-outer">
+      <div class="month-row" id="month-row"></div>
+      <div class="heatmap" id="heatmap"></div>
+    </div>
+
+    <div class="section-label">project log</div>
+    <div class="log-wrap" id="log-wrap">
+      <div class="log-head">
+        <span>#</span><span>project</span><span>language</span><span>date</span><span></span>
+      </div>
+      <div id="log-body"></div>
+    </div>
+
+  </div>
+
+  <div class="sidebar">
+
+    <div class="form-section">
+      <div class="form-title" id="form-title">log a project — <span id="form-day-label">day 1</span></div>
+
+      <div>
+        <label>project name</label>
+        <input type="text" id="f-name" placeholder="e.g. File batch renamer" />
+      </div>
+      <div>
+        <label>description</label>
+        <textarea id="f-desc" placeholder="What did you build? What did you learn?"></textarea>
+      </div>
+      <div>
+        <label>repo / url</label>
+        <input type="text" id="f-link" placeholder="https://github.com/..." />
+      </div>
+      <div>
+        <label>language</label>
+        <div class="lang-grid" id="lang-grid"></div>
+      </div>
+      <button class="save-btn" id="save-btn" onclick="saveEntry()">Save project</button>
+      <div class="msg" id="save-msg"></div>
+    </div>
+
+    <div class="detail-panel" id="detail-panel"></div>
+
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+      <button class="export-btn" onclick="exportJSON()">Export JSON</button>
+      <button class="export-btn" onclick="importJSON()">Import JSON</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LANGS = ['Python','JavaScript','TypeScript','Go','Rust','C','C++','Java','Bash','HTML/CSS','Ruby','Swift','Kotlin','SQL','Other'];
+const START = new Date('2026-04-09T00:00:00');
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+let data = {};
+let selectedDay = -1;
+let activeLang = '';
+
+function dayIdx(d) { return Math.floor((d - START) / 86400000); }
+function dayDate(i) { const d = new Date(START); d.setDate(d.getDate() + i); return d; }
+function todayIdx() { return dayIdx(new Date(new Date().toDateString())); }
+function pad(n) { return String(n).padStart(2,'0'); }
+function fmtDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+function loadData() {
+  try { data = JSON.parse(localStorage.getItem('c365v2') || '{}'); } catch(e) { data = {}; }
+}
+function saveData() {
+  localStorage.setItem('c365v2', JSON.stringify(data));
+}
+
+function calcStreak() {
+  const t = todayIdx();
+  let s = 0, i = t;
+  while (i >= 0 && data[i]) { s++; i--; }
+  return s;
+}
+
+function calcLongest() {
+  let best = 0, cur = 0;
+  for (let i = 0; i <= 364; i++) { if (data[i]) { cur++; best = Math.max(best, cur); } else cur = 0; }
+  return best;
+}
+
+function topLang() {
+  const c = {};
+  Object.values(data).forEach(e => { if (e.lang) c[e.lang] = (c[e.lang]||0)+1; });
+  const s = Object.entries(c).sort((a,b)=>b[1]-a[1]);
+  return s.length ? s[0][0] : '—';
+}
+
+function renderStats() {
+  const total = Object.keys(data).length;
+  const streak = calcStreak();
+  const longest = calcLongest();
+  const pct = Math.round(total / 365 * 100);
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-label">Built</div><div class="stat-val green">${total}</div><div class="stat-sub">of 365 projects</div></div>
+    <div class="stat"><div class="stat-label">Current streak</div><div class="stat-val">${streak}</div><div class="stat-sub">days in a row</div></div>
+    <div class="stat"><div class="stat-label">Longest streak</div><div class="stat-val">${longest}</div><div class="stat-sub">days</div></div>
+    <div class="stat"><div class="stat-label">Top language</div><div class="stat-val" style="font-size:18px">${topLang()}</div><div class="stat-sub">&nbsp;</div></div>
+  `;
+  document.getElementById('topbar-streak').textContent = `${streak} day streak`;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('prog-left').textContent = `${total} / 365 projects`;
+  document.getElementById('prog-right').textContent = pct + '%';
+}
+
+function renderHeatmap() {
+  const today = todayIdx();
+  const monthRow = document.getElementById('month-row');
+  const heatmap = document.getElementById('heatmap');
+  let monthHtml = '';
+  let cellHtml = '';
+
+  let seenMonths = {};
+  for (let col = 0; col < 52; col++) {
+    const d = dayDate(col * 7);
+    const m = d.getMonth();
+    if (!seenMonths[m]) {
+      seenMonths[m] = true;
+      monthHtml += `<span class="month-label" style="margin-left:${col===0?0:(col)*17}px;position:absolute">${MONTHS[m]}</span>`;
+    }
+  }
+  monthRow.style.position = 'relative';
+  monthRow.style.height = '14px';
+  monthRow.innerHTML = monthHtml;
+
+  for (let i = 0; i < 365; i++) {
+    const col = Math.floor(i / 7);
+    const row = i % 7;
+    const done = !!data[i];
+    const isFuture = i > today;
+    const isToday = i === today;
+    const isSel = i === selectedDay;
+    let cls = isFuture ? 'future' : done ? 'done' : 'empty';
+    let extra = '';
+    if (isToday) extra += ' is-today';
+    if (isSel) extra += ' selected';
+    const d = dayDate(i);
+    const tip = `Day ${i+1} · ${fmtDate(d)}${done ? ' · '+data[i].name : ''}`;
+    cellHtml += `<div class="cell ${cls}${extra}" style="grid-column:${col+1};grid-row:${row+1}" onclick="selectDay(${i})" title="${tip}"><span class="tooltip">${tip}</span></div>`;
+  }
+  heatmap.innerHTML = cellHtml;
+}
+
+function renderLog() {
+  const entries = Object.entries(data).sort((a,b) => b[0]-a[0]).slice(0, 50);
+  const body = document.getElementById('log-body');
+  if (!entries.length) {
+    body.innerHTML = '<div class="empty-state">// no projects yet. start coding!</div>';
+    return;
+  }
+  body.innerHTML = entries.map(([i, e]) => `
+    <div class="log-row ${+i===selectedDay?'active':''}" onclick="selectDay(${i})">
+      <span class="day-num">#${+i+1}</span>
+      <span><div class="proj-name">${esc(e.name)}</div>${e.desc?`<div class="proj-desc-short">${esc(e.desc)}</div>`:''}</span>
+      <span>${e.lang ? `<span class="lang-tag">${esc(e.lang)}</span>` : ''}</span>
+      <span class="date-cell">${e.date||''}</span>
+      <button class="del-btn" onclick="event.stopPropagation();deleteEntry(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+function selectDay(i) {
+  const today = todayIdx();
+  if (i > today) return;
+  selectedDay = i;
+  const d = dayDate(i);
+  const e = data[i];
+  const detail = document.getElementById('detail-panel');
+  const formTitle = document.getElementById('form-day-label');
+  formTitle.textContent = `day ${i+1} — ${fmtDate(d)}`;
+
+  if (e) {
+    detail.style.display = 'block';
+    detail.innerHTML = `
+      <div class="detail-day">Day ${i+1} · ${fmtDate(d)} ${e.lang ? '· '+e.lang : ''}</div>
+      <div class="detail-name">${esc(e.name)}</div>
+      ${e.desc ? `<div class="detail-desc">${esc(e.desc)}</div>` : ''}
+      ${e.link ? `<a class="detail-link" href="${esc(e.link)}" target="_blank">${esc(e.link)}</a>` : ''}
+    `;
+    document.getElementById('f-name').value = e.name;
+    document.getElementById('f-desc').value = e.desc || '';
+    document.getElementById('f-link').value = e.link || '';
+    activeLang = e.lang || '';
+    renderLangs();
+  } else {
+    detail.style.display = 'none';
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-desc').value = '';
+    document.getElementById('f-link').value = '';
+    activeLang = '';
+    renderLangs();
+    document.getElementById('f-name').focus();
+  }
+  renderHeatmap();
+  renderLog();
+}
+
+function deleteEntry(i) {
+  delete data[i];
+  saveData();
+  if (selectedDay === +i) {
+    selectedDay = todayIdx();
+    document.getElementById('detail-panel').style.display = 'none';
+  }
+  render();
+}
+
+function saveEntry() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { document.getElementById('f-name').focus(); return; }
+  const day = selectedDay >= 0 ? selectedDay : todayIdx();
+  data[day] = {
+    name,
+    lang: activeLang,
+    desc: document.getElementById('f-desc').value.trim(),
+    link: document.getElementById('f-link').value.trim(),
+    date: fmtDate(dayDate(day))
+  };
+  saveData();
+  const msg = document.getElementById('save-msg');
+  msg.textContent = '// saved!';
+  setTimeout(() => msg.textContent = '', 2000);
+  selectDay(day);
+  render();
+}
+
+function renderLangs() {
+  document.getElementById('lang-grid').innerHTML = LANGS.map(l =>
+    `<button class="lang-chip ${activeLang===l?'on':''}" onclick="setLang('${l}')">${l}</button>`
+  ).join('');
+}
+
+function setLang(l) { activeLang = activeLang===l ? '' : l; renderLangs(); }
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = '365-code-log.json'; a.click();
+}
+
+function importJSON() {
+  const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => { try { data = JSON.parse(ev.target.result); saveData(); render(); } catch(e) { alert('Invalid JSON'); } };
+    r.readAsText(f);
+  };
+  input.click();
+}
+
+function render() { renderStats(); renderHeatmap(); renderLog(); }
+
+loadData();
+selectedDay = todayIdx();
+renderLangs();
+render();
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') saveEntry();
+});
+</script>
+</body>
+</html>
